@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import axios from "axios";
 import { toast } from "sonner";
-import { Upload, Download, Trash2, RotateCw, Image as ImageIcon, Type, Settings, Palette, Eye, EyeOff, FileText } from "lucide-react";
+import { Upload, Download, Trash2, RotateCw, Image as ImageIcon, Type, Settings, Palette, Eye, EyeOff, FileText, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ProgressButton from "@/components/ui/ProgressButton";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +12,18 @@ import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
+
+// ============== FILE SIZE CONSTANTS ==============
+// Maximum file size: 30MB (30 * 1024 * 1024 bytes)
+const MAX_FILE_SIZE = 30 * 1024 * 1024;
+// Format for displaying file size
+const formatFileSize = (bytes) => {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+};
 
 // Create axios instance with interceptors for better error handling
 const api = axios.create({
@@ -249,8 +261,21 @@ const WatermarkPDF = () => {
   const handlePdfSelect = (e) => {
     const file = e.target.files[0];
     if (file && file.type === "application/pdf") {
+      // Check file size before accepting
+      if (file.size > MAX_FILE_SIZE) {
+        toast.error(
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-red-500" />
+            <span>File too large! Maximum size is {formatFileSize(MAX_FILE_SIZE)}. Your file is {formatFileSize(file.size)}</span>
+          </div>
+        );
+        if (pdfInputRef.current) {
+          pdfInputRef.current.value = '';
+        }
+        return;
+      }
       setPdfFile(file);
-      toast.success(`Selected: ${file.name}`);
+      toast.success(`Selected: ${file.name} (${formatFileSize(file.size)})`);
     } else {
       toast.error("Please select a PDF file");
     }
@@ -525,7 +550,7 @@ const WatermarkPDF = () => {
                 <div>
                   <p className="text-sm font-medium">{pdfFile.name}</p>
                   <p className="text-xs text-gray-500">
-                    {(pdfFile.size / 1024).toFixed(2)} KB
+                    {formatFileSize(pdfFile.size)}
                   </p>
                 </div>
               </div>

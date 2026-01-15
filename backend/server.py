@@ -1,8 +1,9 @@
 from fastapi import FastAPI, APIRouter, File, UploadFile, Form, HTTPException
 from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
-from starlette.middleware.cors import CORSMiddleware
+from starlette.middleware.cors import CORSMiddleware as StarletteCORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
@@ -22,6 +23,22 @@ from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Font, Border, Side, Alignment
 import pdfplumber
 from xlsx2pdf.transformator import Transformer
+
+# ============== FILE SIZE CONSTANTS ==============
+# Maximum file size: 30MB (30 * 1024 * 1024 bytes)
+MAX_FILE_SIZE = 30 * 1024 * 1024  # 30 MB in bytes
+
+# Helper function to format file size for display
+def format_file_size(bytes_size):
+    """Format file size in human-readable format"""
+    if bytes_size == 0:
+        return '0 Bytes'
+    units = ['Bytes', 'KB', 'MB', 'GB']
+    i = 0
+    while bytes_size >= 1024 and i < len(units) - 1:
+        bytes_size /= 1024
+        i += 1
+    return f"{bytes_size:.2f} {units[i]}"
 
 # Import watermark service
 from services.watermark_service import (
